@@ -54,7 +54,7 @@ const TodoList = () => {
 
   return (
     <div className="todo-list">
-      <h2>Todo List</h2>
+      <h2>Todo List (GraphQL with Apollo Client)</h2>
       <div className="add-todo">
         <input
           type="text"
