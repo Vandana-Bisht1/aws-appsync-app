@@ -27,6 +27,7 @@ jobs:
         run: |
           node --version
           npm ci --production
+          npm install @babel/plugin-proposal-private-property-in-object --save-dev
 
       - name: Build Static Website
         run: npm run build
