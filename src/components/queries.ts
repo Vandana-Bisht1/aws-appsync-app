@@ -1,6 +1,30 @@
-import { gql } from "@apollo/client";
+import { gql, TypedDocumentNode } from "@apollo/client";
 
 export const GET_TODO = gql`
+  query listTodos {
+    listTodos {
+      items {
+        id
+        name
+        done
+      }
+    }
+  }
+`;
+
+interface PartialData {
+
+    listTodos: {
+      items :[{
+        id: string
+        name: string
+        done: boolean
+      }]
+    }
+}
+
+export const PARTIAL_GET_DOG_QUERY : TypedDocumentNode<
+PartialData> = gql`
   query listTodos {
     listTodos {
       items {
