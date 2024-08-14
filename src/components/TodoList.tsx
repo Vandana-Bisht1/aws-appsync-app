@@ -57,7 +57,7 @@ const TodoList = () => {
         });
       }
     }
-  }, [data]);
+  }, [data, db]);
 
   useEffect(() => {
     if (db) {
@@ -73,7 +73,7 @@ const TodoList = () => {
       // Cleanup subscription on component unmount
       return () => subscription.unsubscribe();
     }
-  }, [db]);
+  }, [db, refetch]);
 
   const [createTodo] = useMutation(CREATE_TODO, {
     onError: (error) => {
