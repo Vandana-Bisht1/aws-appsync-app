@@ -62,8 +62,16 @@ const TodoList = () => {
   useEffect(() => {
     if (db) {
       const subscription = db.todos.find().$.subscribe(async (todos: any) => {
-        startTransition(() => {
+        const handleRefetchAndRemove = async () => {
           refetch();
+          const todo = await db.todos?.findOne("1").exec();
+          if (todo) {
+            await todo.remove();
+          }
+        };
+        
+        startTransition(() => {
+          handleRefetchAndRemove();
         });
         // Manually trigger a refresh of RxDB data
         setTodos(todos || []);
