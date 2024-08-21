@@ -39,13 +39,37 @@ export type TodoDocType = ExtractDocumentTypeFromTypedRxJsonSchema<
 
 export type TodoCollection = RxCollection<TodoDocType>;
 
+export const todoSchema: RxJsonSchema<TodoDocType> = todoSchemaLiteral;
+
+// New schema for a list of string IDs
+export const listSchemaLiteral = {
+  version: 0,
+  primaryKey: "id",
+  type: "object",
+  properties: {
+    id: {
+      type: "string",
+      maxLength: 100, // <- the primary key must have set maxLength
+    }
+  },
+  required: ["id"],
+} as const;
+
+const listSchemaTyped = toTypedRxJsonSchema(listSchemaLiteral);
+export type ListDocType = ExtractDocumentTypeFromTypedRxJsonSchema<
+  typeof listSchemaTyped
+>;
+
+export type ListCollection = RxCollection<ListDocType>;
+
+export const listSchema: RxJsonSchema<ListDocType> = listSchemaLiteral;
+
 export type MyDatabaseCollections = {
   todos: TodoCollection;
+  lists: ListCollection; // <- Add the new collection type here
 };
 
 export type MyDatabase = RxDatabase<MyDatabaseCollections>;
-
-export const todoSchema: RxJsonSchema<TodoDocType> = todoSchemaLiteral;
 
 let dbPromise: Promise<MyDatabase>;
 const _create = async () => {
@@ -53,9 +77,14 @@ const _create = async () => {
     name: "mytododb",
     storage: getRxStorageDexie(),
   });
+  
+  // Add both collections: todos and lists
   await db.addCollections({
     todos: {
       schema: todoSchema,
+    },
+    lists: {
+      schema: listSchema,
     },
   });
   return db;

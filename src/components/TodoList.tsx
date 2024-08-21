@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { NetworkStatus, useMutation, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
 import { CREATE_TODO, GET_TODO, UPDATE_TODO, DELETE_TODO } from "./queries";
@@ -44,41 +45,68 @@ const TodoList = () => {
     onError: (error: any) => {
       console.error("GraphQL query error:", error);
     },
-    // pollInterval: 5000, // to call api after certain period of time
-    // skipPollAttempt:() => {
-    //   return true;
-    // }
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [createTodo] = useMutation(CREATE_TODO, {
+    onError: (error) => {
+      console.error("GraphQL mutation error:", error);
+    },
+    refetchQueries: [{ query: GET_TODO }],
+  });
+
+  const [updateTodo] = useMutation(UPDATE_TODO, {
+    onError: (error) => {
+      console.error("GraphQL mutation error:", error);
+    },
+    refetchQueries: [{ query: GET_TODO }],
+  });
+
+  const [deleteTodo] = useMutation(DELETE_TODO, {
+    onError: (error) => {
+      console.error("GraphQL mutation error:", error);
+    },
+    refetchQueries: [{ query: GET_TODO }],
+  });
+
+  // Sync RxDB with GraphQL, including handling deleted todos
   const syncWithGraphQL = async () => {
     try {
       const rxdbTodos = await db.todos.find().exec();
+      const rxdbDeletedTodos = await db.lists.find().exec();
 
       // Handle creation and update for todos
       for (const todo of rxdbTodos) {
-          if (!todo._rev) {
-            console.log("Creating in GraphQL", todo);
-            await createTodo({
-              variables: {
-                createtodoinput: {
-                  name: todo.name,
-                  done: todo.done,
-                },
+        if (!todo._rev) {
+          await createTodo({
+            variables: {
+              createtodoinput: {
+                name: todo.name,
+                done: todo.done,
               },
-            });
-          } else {
-            console.log("Updating in GraphQL", todo);
-            await updateTodo({
-              variables: {
-                updatetodoinput: {
-                  id: todo.id,
-                  done: todo.done,
-                },
+            },
+          });
+        } else {
+          await updateTodo({
+            variables: {
+              updatetodoinput: {
+                id: todo.id,
+                done: todo.done,
               },
-            });
-          }
+            },
+          });
         }
+      }
+
+      // Handle deletion for todos
+      for (const deletedTodo of rxdbDeletedTodos) {
+        await deleteTodo({
+          variables: {
+            deletetodoinput: {
+              id: deletedTodo.id,
+            },
+          },
+        });
+      }
     } catch (error) {
       console.error("Error syncing with GraphQL:", error);
     }
@@ -88,7 +116,6 @@ const TodoList = () => {
     if (db) {
       const subscription = db.todos.find().$.subscribe(async (todos: any) => {
         if (isOnline) {
-          console.log("App is online");
           await syncWithGraphQL();
         }
         setTodos(todos || []);
@@ -97,27 +124,7 @@ const TodoList = () => {
 
       return () => subscription.unsubscribe();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isOnline]);
-
-  const [createTodo] = useMutation(CREATE_TODO, {
-    onError: (error) => {
-      console.error("GraphQL mutation error:", error);
-    },
-    refetchQueries: [{ query: GET_TODO }],
-  });
-  const [updateTodo] = useMutation(UPDATE_TODO, {
-    onError: (error) => {
-      console.error("GraphQL mutation error:", error);
-    },
-    refetchQueries: [{ query: GET_TODO }],
-  });
-  const [deleteTodo] = useMutation(DELETE_TODO, {
-    onError: (error) => {
-      console.error("GraphQL mutation error:", error);
-    },
-    refetchQueries: [{ query: GET_TODO }],
-  });
 
   const addTodo = async () => {
     if (name.trim() === "") {
@@ -162,14 +169,18 @@ const TodoList = () => {
   const deleteTodoItem = async (id: string) => {
     try {
       if (db) {
+        // Fetch and remove the todo item from RxDB
         const todoFromRxDB = await db.todos?.findOne(id).exec();
         if (todoFromRxDB) {
           await todoFromRxDB.remove();
+          
+          // Insert the deleted ID into the lists collection
+          await db.lists?.insert({ id});
         } else {
           console.error(`Todo with ID ${id} not found in RxDB.`);
         }
       }
-
+  
       if (isOnline) {
         // Attempt to delete from GraphQL if online
         await deleteTodo({
@@ -225,8 +236,8 @@ const TodoList = () => {
         <button onClick={addTodo}>Add Todo</button>
       </div>
       <div>
-      <h4>Graph QLTodo List is {isOnline ? 'online' : 'offline'}</h4>
-        {data.listTodos.items.map((todo: any) => (
+        <h4>GraphQL Todo List is {isOnline ? 'online' : 'offline'}</h4>
+        {data?.listTodos.items.map((todo: any) => (
           <li key={todo.id} className="todo-item">
             <span className={todo.done ? "todo-name done" : "todo-name"}>
               {todo.name}
@@ -245,7 +256,7 @@ const TodoList = () => {
           </li>
         ))}
 
-        <h4>Todo List is {isOnline ? 'online' : 'offline'}</h4>
+        <h4>RxDB Todo List is {isOnline ? 'online' : 'offline'}</h4>
         {todos.map((todo: any) => (
           <li key={todo.id} className="todo-item">
             <span className={todo.done ? "todo-name done" : "todo-name"}>
