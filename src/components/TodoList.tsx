@@ -97,6 +97,7 @@ const TodoList = () => {
 
       return () => subscription.unsubscribe();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isOnline]);
 
   const [createTodo] = useMutation(CREATE_TODO, {
