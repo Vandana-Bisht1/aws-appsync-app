@@ -1,3 +1,4 @@
+/* eslint-disable array-callback-return */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { NetworkStatus, useMutation, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
@@ -45,7 +46,29 @@ const TodoList = () => {
     onError: (error: any) => {
       console.error("GraphQL query error:", error);
     },
+    pollInterval: isOnline ? 5000 : 0,
   });
+
+  useEffect(()=>{
+    if(isOnline) {
+      syncData(data)
+    }
+  },  [data, isOnline])
+
+  const syncData = async (data: any) => {
+    const deletedTodos = await db.lists.find().exec();
+    data?.listTodos.items.map(async (item:any)=>{
+      const isDeleted = deletedTodos.some((deleted: any) => deleted.id === item.id);
+      if (!isDeleted && db) {
+        await db.todos?.upsert({
+          id: item.id,
+          name: item.name,
+          done: item.done,
+        });
+      }
+      
+    })
+  }
 
   const [createTodo] = useMutation(CREATE_TODO, {
     onError: (error) => {
