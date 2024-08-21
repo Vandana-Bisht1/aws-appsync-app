@@ -97,7 +97,7 @@ const TodoList = () => {
 
       return () => subscription.unsubscribe();
     }
-  }, [db, isOnline, syncWithGraphQL]);
+  }, [db, isOnline]);
 
   const [createTodo] = useMutation(CREATE_TODO, {
     onError: (error) => {
