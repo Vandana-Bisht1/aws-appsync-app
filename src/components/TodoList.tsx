@@ -1,5 +1,5 @@
 import { NetworkStatus, useMutation, useQuery } from "@apollo/client";
-import { startTransition, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CREATE_TODO, GET_TODO, UPDATE_TODO, DELETE_TODO } from "./queries";
 import "./TodoList.css";
 import { getDatabase } from "./schema/todoSchema";
@@ -50,21 +50,7 @@ const TodoList = () => {
     // }
   });
 
-  useEffect(() => {
-    if (db) {
-      const subscription = db.todos.find().$.subscribe(async (todos: any) => {
-        if (isOnline) {
-          console.log("App is online");
-          await syncWithGraphQL();
-        }
-        setTodos(todos || []);
-        setName("");
-      });
-
-      return () => subscription.unsubscribe();
-    }
-  }, [db, isOnline]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const syncWithGraphQL = async () => {
     try {
       const rxdbTodos = await db.todos.find().exec();
@@ -97,6 +83,21 @@ const TodoList = () => {
       console.error("Error syncing with GraphQL:", error);
     }
   };
+
+  useEffect(() => {
+    if (db) {
+      const subscription = db.todos.find().$.subscribe(async (todos: any) => {
+        if (isOnline) {
+          console.log("App is online");
+          await syncWithGraphQL();
+        }
+        setTodos(todos || []);
+        setName("");
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, [db, isOnline, syncWithGraphQL]);
 
   const [createTodo] = useMutation(CREATE_TODO, {
     onError: (error) => {
