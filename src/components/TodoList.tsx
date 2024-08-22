@@ -11,6 +11,7 @@ const TodoList = () => {
   const [db, setDb] = useState<any>(null);
   const [name, setName] = useState<string>("");
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
   // Online/Offline detection
   useEffect(() => {
@@ -46,27 +47,32 @@ const TodoList = () => {
     onError: (error: any) => {
       console.error("GraphQL query error:", error);
     },
-    pollInterval: isOnline ? 5000 : 0,
+    onCompleted(data) {
+      if(!isCompleted) {
+        setIsCompleted(true)
+      }
+    },
+    // pollInterval: isOnline ? 5000 : 0,
   });
 
   useEffect(()=>{
-    if(isOnline) {
+    console.log("useEffect", isCompleted)
+    if(isCompleted) {
       syncData(data)
     }
-  },  [data, isOnline])
+  },  [isCompleted, db, data])
 
-  const syncData = async (data: any) => {
-    const deletedTodos = await db.lists.find().exec();
-    data?.listTodos.items.map(async (item:any)=>{
-      const isDeleted = deletedTodos.some((deleted: any) => deleted.id === item.id);
-      if (!isDeleted && db) {
-        await db.todos?.upsert({
+  const syncData = async (data: any) => {    
+    const deletedTodos = await db?.lists?.find().exec();
+    await data?.listTodos?.items.map(async (item:any)=>{
+      const isDeleted = deletedTodos?.some((deleted: any) => deleted.id === item.id);
+      if (!isDeleted && db && item.id !== "1") {
+        await db?.todos?.upsert({
           id: item.id,
           name: item.name,
           done: item.done,
         });
       }
-      
     })
   }
 
@@ -99,16 +105,7 @@ const TodoList = () => {
 
       // Handle creation and update for todos
       for (const todo of rxdbTodos) {
-        if (!todo._rev) {
-          await createTodo({
-            variables: {
-              createtodoinput: {
-                name: todo.name,
-                done: todo.done,
-              },
-            },
-          });
-        } else {
+        if (todo._rev) {
           await updateTodo({
             variables: {
               updatetodoinput: {
@@ -129,6 +126,7 @@ const TodoList = () => {
             },
           },
         });
+        deletedTodo.remove()
       }
     } catch (error) {
       console.error("Error syncing with GraphQL:", error);
@@ -173,14 +171,14 @@ const TodoList = () => {
             done: false,
           });
         }
-      } else {
-        if (db) {
-          await db.todos?.insert({
-            id: Date.now().toString(),
-            name,
-            done: false,
-          });
-        }
+      // } else {
+      //   if (db) {
+      //     await db.todos?.insert({
+      //       id: Date.now().toString(),
+      //       name,
+      //       done: false,
+      //     });
+      //   }
       }
 
       setName(""); // Clear input field after adding todo
@@ -196,14 +194,14 @@ const TodoList = () => {
         const todoFromRxDB = await db.todos?.findOne(id).exec();
         if (todoFromRxDB) {
           await todoFromRxDB.remove();
-          
+          if(!isOnline) {
           // Insert the deleted ID into the lists collection
           await db.lists?.insert({ id});
+          }
         } else {
           console.error(`Todo with ID ${id} not found in RxDB.`);
         }
       }
-  
       if (isOnline) {
         // Attempt to delete from GraphQL if online
         await deleteTodo({
@@ -225,17 +223,6 @@ const TodoList = () => {
         const todoFromRxDB = await db.todos?.findOne(todoItem.id).exec();
         if (todoFromRxDB) {
           await todoFromRxDB.patch({ done: !todoFromRxDB.done });
-        }
-
-        if (isOnline) {
-          await updateTodo({
-            variables: {
-              updatetodoinput: {
-                id: todoItem.id,
-                done: !todoItem.done,
-              },
-            },
-          });
         }
       }
     } catch (error) {

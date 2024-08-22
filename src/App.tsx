@@ -6,20 +6,20 @@ import { ApolloProvider } from "@apollo/client";
 import { PARTIAL_GET_DOG_QUERY } from "./components/queries";
 
 function App() {
-  client.writeQuery({
-    query: PARTIAL_GET_DOG_QUERY,
-    data: {
-      listTodos: {
-        items: [
-          {
-            id: "1",
-            name: "partial temp name",
-            done: false,
-          },
-        ],
-      },
-    },
-  });
+  // client.writeQuery({
+  //   query: PARTIAL_GET_DOG_QUERY,
+  //   data: {
+  //     listTodos: {
+  //       items: [
+  //         {
+  //           id: "1",
+  //           name: "partial temp name",
+  //           done: false,
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
   return (
     <ApolloProvider client={client}>
       <div className="App">
