@@ -3,7 +3,6 @@ import "./App.css";
 import TodoList from "./components/TodoList";
 import client from "./components/apolloClient";
 import { ApolloProvider } from "@apollo/client";
-import { PARTIAL_GET_DOG_QUERY } from "./components/queries";
 
 function App() {
   // client.writeQuery({
